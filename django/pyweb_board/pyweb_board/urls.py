@@ -14,7 +14,16 @@ urlpatterns = [
     # 글 저장(http://localhost/insert)
     path('insert', views.insert),
     # 파일 다운로드(http://localhost/download)
-    path('download', views.download)
+    path('download', views.download),
+    # 상세화면(http://localhost/detail)
+    path('detail', views.detail), 
+    path('detail/', views.detail),
+    # 댓글 저장(http://localhost/reply_insert)
+    path('reply_insert', views.reply_insert),
+    # 게시물 수정(http://localhost/update)
+    path('update', views.update),
+    # 게시물 삭제(http://localhost/delete)
+    path('delete', views.delete),
 ]
 
 # 디버그 툴바 관련 url mapping

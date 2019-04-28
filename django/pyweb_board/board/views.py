@@ -11,14 +11,91 @@ from django.utils.http import urlquote
 UPLOAD_DIR = "/Users/kyeongmin/Documents/python_basic/upload/"
 
 # 게시물 목록(http://localhost)
+@csrf_exempt
 def list(request):
-    # 레코드 갯수
-    boardCount = Board.objects.count()
-    # 글번호 내림차순으로 게시물 리스트를 받음
-    boardList = Board.objects.all().order_by("-idx")
-    # list.html로 포워딩하여 출력됨
+    # 검색옵션
+    try:
+        search_option = request.POST["search_option"]
+    except:
+        search_option = "writer" # 검색옵션 기본값
+
+    # 검색키워드
+    try:
+        search = request.POST["search"]
+    except:
+        search = ""
+
+    if search_option == "all":
+        boardCount = Board.objects.filter(\
+        Q(writer__contains=search) | Q(title__contains=search) | Q(content__contains=search)).count()
+    elif search_option == "writer":
+        boardCount = Board.objects.filter(writer__contains = search).count()
+    elif search_option == "title":
+        boardCount = Board.objects.filter(title__contains = search).count()
+    elif search_option == "content":
+        boardCount = Board.objects.filter(content__contains = search).count()
+
+    try:
+        start = int(request.GET["start"])
+    except:
+        start = 0
+
+    page_size = 10  # 페이지당 게시물수
+    page_list_size = 10 # 한 화면에 표시할 페이지의 갯수
+    end = start + page_size
+    total_page = math.ceil(boardCount / page_size)
+    current_page = math.ceil( (start+1) / page_size )
+    start_page = \
+        math.floor((current_page - 1) / page_list_size) * page_list_size + 1
+    end_page = start_page + page_list_size - 1
+    if total_page < end_page:
+        end_page = total_page
+    if start_page >= page_list_size:
+        prev_list = (start_page - 2) * page_size
+    else:
+        prev_list = 0
+    if total_page > end_page:
+        next_list = end_page * page_size
+    else:
+        next_list = 0
+    print("start : ", start)
+    print("end : ", end)
+    print("startpage : ", start_page)
+    print("endpage : ", end_page)
+    print("search:",search)
+    print("searchoption:",search_option)
+
+    if search_option == "all":
+        boardList = Board.objects.filter(\
+            Q(writer__contains=search) | Q(title__contains=search) | \
+            Q(content__contains=search)).order_by("-idx")[start:end]
+    elif search_option == "writer":
+        boardList = Board.objects.filter(\
+            writer__contains=search).order_by("-idx")[start:end]
+    elif search_option == "title":
+        boardList = Board.objects.filter(\
+            title__contains=search).order_by("-idx")[start:end]
+    elif search_option == "content":
+        boardList = Board.objects.filter(\
+            content__contains=search).order_by("-idx")[start:end]
+
+    links = []
+    for i in range(start_page, end_page+1):
+        page = (i - 1) * page_size
+        links.append("<a href='?start="+str(page)+"'>"+str(i)+"</a>")
+    print("links : ", links)
+
+    print("boardList")
+    print(boardList)
+
     return render_to_response("list.html",
-        {"boardList": boardList, "boardCount": boardCount})
+        {"boardList": boardList, "boardCount": boardCount,
+        "search_option": search_option, "search": search,
+        "range":range(start_page-1, end_page),
+        "start_page": start_page, "end_page": end_page,
+        "page_list_size": page_list_size,
+        "total_page": total_page, "prev_list": prev_list,
+        "next_list": next_list, "links": links})
 
 # 글쓰기 페이지로 이동(http://localhost/write)
 def write(request):
@@ -92,3 +169,98 @@ def download(request):
 
         # 첨부파일을 클라이언트로 전송
         return response
+
+# 상세화면(http://localhost/detail)
+def detail(request):
+    try:
+        search_option = request.GET["search_option"]
+    except:
+        search_option = "writer"
+    try:
+        search = request.GET["search"]
+    except:
+        search = ""
+
+    # 클릭한 글번호
+    id = request.GET["idx"]
+    # 글번호에 해당하는 레코드 선택
+    vo = Board.objects.get(idx=id)
+    # 조회수 증가 처리
+    vo.hit_up()
+    vo.save()
+    # 첨부파일의 크기
+    filesize = "%.2f" % (vo.filesize / 1024)
+    # 댓글 목록
+    commentList = Comment.objects.filter(board_idx=id).order_by("idx")
+
+    # detail.html로 넘어가서 출력됨
+    return render_to_response("detail.html",
+            {"vo": vo, "filesize": filesize, "commentList": commentList,
+            "search_option": search_option, "search": search})
+
+# 댓글 저장(http://localhost/reply_insert)
+@csrf_exempt
+def reply_insert(request):
+    # 게시물 번호
+    id = request.POST["idx"]
+    # 댓글 객체 생성
+    vo = Comment(board_idx= id,
+                writer = request.POST["writer"],
+                content = request.POST["content"])
+
+    # insert query가 호출됨
+    vo.save()
+    # 상세화면으로 다시 돌아감
+    return HttpResponseRedirect("detail?idx="+id)
+
+# 글 수정(http://localhost/update)
+@csrf_exempt
+def update(request):
+    # 글번호
+    id = request.POST["idx"]
+    # 수정 전의 레코드 조회
+    vo_src = Board.objects.get(idx=id)
+    # 수정 전의 첨부파일이름과 사이즈
+    fname = vo_src.filename
+    fsize = vo_src.filesize
+
+    # 새로운 첨부파일이 있으면
+    if "file" in request.FILES:
+        # <input type="file" 태그의 name이 file인 태그
+        file = request.FILES["file"]
+        # 업로드한 파일의 이름
+        fname = file._name
+        # wb : write binary
+        fp = open("%s%s" % (UPLOAD_DIR, fname), "wb")
+        # 파일 조각들을 조금씩 저장
+        for chunk in file.chunks():
+            fp.write(chunk)
+        # 파일 닫기
+        fp.close()
+
+        # 첨부파일의 크기(업로드 완료 후 계산)
+        fsize = os.path.getsize(UPLOAD_DIR+fname)
+
+    # 수정 후의 내용
+    vo_new = Board( idx = id,
+                    writer = request.POST["writer"],
+                    title = request.POST["title"],
+                    content = request.POST["content"],
+                    filename = fname,
+                    filesize = fsize)
+
+    # update 쿼리가 호출됨
+    vo_new.save()
+
+    # 시작 페이지로 이동
+    return redirect("/")
+
+# 파일 삭제(http://localhost/delete)
+@csrf_exempt
+def delete(request):
+    # 글번호
+    id = request.POST["idx"]
+    # 레코드 삭제
+    Board.objects.get(idx=id).delete()
+    # 시작 페이지로 이동
+    return redirect("/")

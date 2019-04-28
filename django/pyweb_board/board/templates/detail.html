@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script>
+function home() {
+    location.href = "/"
+}
+
+function update() {
+    document.form1.action = "update"
+    document.form1.submit();
+}
+
+function del() {
+    if(confirm("삭제하시겠습니까?")) {
+        document.form1.action = "delete"
+        document.form1.submit();
+    }
+}
+</script>
+</head>
+<body>
+    <h2>게시물 편집</h2>
+    <form method="post" name="form1" enctype="multipart/form-data">
+        <table border="1" width="700px">
+            <tr>
+                <td>이름</td>
+                <td><input name="writer" value="{{vo.writer}}"></td>
+            </tr>
+            <tr>
+                <td>제목</td>
+                <td><input name="title" value="{{vo.title}}"></td>
+            </tr>
+            <tr>
+                <td>조회수</td>
+                <td>{{vo.hit}}</td>
+            </tr>
+            <tr>
+                <td>날짜</td>
+                <td>{{vo.post_date}}</td>
+            </tr>
+            <tr>
+                <td>내용</td>
+                <td>
+                    <textarea name="content" rows="5" cols="60">{{vo.content}}</textarea>
+                </td>
+            </tr>
+            <tr>
+                <td>첨부파일</td>
+                <td>
+                    {% if vo.filesize > 0 %}
+                        <a href="download?idx={{vo.idx}}">{{vo.filesize}}</a>
+                        ( {{filesize}}KB )
+                        <br>
+                    {% endif %}
+                    <input type="file" name="file">
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2" align="center">
+                    <input type="hidden" name="idx" value="{{vo.idx}}">
+                    <input type="button" value="목록" onclick="home()">
+                    <input type="button" value="수정" onclick="update()">
+                    <input type="button" value="삭제" onclick="del()">
+                </td>
+            </tr>
+        </table>
+    </form>
+
+    <!-- 댓글쓰기폼 -->
+    <form method="post" action="/reply_insert">
+        {% csrf_token %}
+        <input name="writer" placeholder="이름"><br>
+        <textarea rows="5" cols="80" name="content" placeholder="댓글을 작성하세요"></textarea><br>
+        <input type="hidden" name="idx" value="{{vo.idx}}">
+        <button>댓글쓰기</button>
+    </form>
+
+    <!-- 댓글 목록을 출력할 영역 -->
+    <table border="1" width="700px">
+        {% for row in commentList %}
+        <tr>
+            <td>
+                {{row.writer}} ( {{row.post_date}} ) <br>
+                {{row.content}}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

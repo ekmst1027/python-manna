@@ -50,7 +50,7 @@ def list(request):
     # list.html 페이지로 넘어가서 출력됨
     return render_to_response(\
         "list.html", {"gbCount":gbCount, "gbList":gbList, \
-            "searchkey": searchkey, "search": search, "msg": msg})
+            "searchkey": searchkey, "search": search, "msg": msg})``
 
 
 def write(request):

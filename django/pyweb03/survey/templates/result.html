@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+</head>
+<body>
+    <h2>설문조사 결과</h2>
+    <table border="1">
+        <tr align="center">
+            <th>문항</th>
+            <th>응답수</th>
+            <th>응답비율</th>
+        </tr>
+        {% for row, ans in surveyList %}
+        <tr align="center">
+            <td>{{ans}}</td>
+            <td>{{row.sum_num}}</td>
+            <td>{{row.rate}}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

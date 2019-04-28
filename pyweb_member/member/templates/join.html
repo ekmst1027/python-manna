@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+</head>
+<body>
+    <h2>회원가입</h2>
+    <form method="post">
+        {% csrf_token %} <!-- 크로스 사이트 스크립팅 공격을 방지하기 위한 코드 -->
+        <table>
+            {{form.as_table}}   <!-- 회원가입폼이 테이블 형식으로 만들어짐 -->
+        </table>
+        <input type="submit" value="회원가입">
+    </form>
+</body>
+</html>

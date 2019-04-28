@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+</head>
+<body>
+    <h2>로그인</h2>
+    <form method="post" action="{% url 'login' %}">
+    {% csrf_token %} <!-- 크로스 사이트 스크립팅 공격을 방지하기 위한 코드 -->
+    <!-- {{form.as_p}} >> 기본으로 내장된 로그인 폼을 아래와 같이 커스터마이징 한다 -->
+    <table>
+        <tr>
+            <td>아이디</td>
+            <td>
+                <input id="{{form.username.id_for_label}}" maxlength="15" name="{{form.username.html_name}}">
+            </td>
+        </tr>
+        <tr>
+            <td>비밀번호</td>
+            <td>
+                <input id="{{form.password.id_for_label}}" maxlength="120" 
+                name="{{form.password.html_name}}" type="password">
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2" align="center">
+                <input type="submit" value="로그인">
+                <input type="button" value="취소" onclick="location.href='{% url '/' %}'">
+            </td>
+        </tr>
+    </table>
+    </form>
+</body>
+</html>

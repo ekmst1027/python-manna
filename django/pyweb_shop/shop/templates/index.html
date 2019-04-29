@@ -4,6 +4,19 @@
 </head>
 <body>
     <h2>Home</h2>
+    {% if data.is_authenticated %}
+    <h2>회원 로그인 관련 정보</h2>
+    <ul>
+        {% for key, value in data.items %}
+            <li>{{key}} : {{value}}</li>
+        {% endfor %}
+    </ul>
+    <a href="/logout">로그아웃</a>
+    {% else %}
+    <span style="color:red;">{{msg}}</span><br>
+    <a href="/login">로그인</a>
+    <a href="/join">회원가입</a>
+    {% endif %}
     <a href="/product_list">상품목록</a>
 </body>
 </html>

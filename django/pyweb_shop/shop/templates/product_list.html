@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="http://code.jquery.com/jquery-3.3.1.js"></script>
+<script>
+$(function() {
+    $("#btnHome").click(function() {
+        location.href="/";
+    });
+    $("#btnAdd").click(function() {
+        location.href="product_write";
+    });
+});
+</script>
+</head>
+<body>
+    <h2>상품목록</h2>
+    <button type="button" id="btnHome">Home</button>
+    <button type="button" id="btnAdd">상품등록</button>
+    {{count}}개의 상품이 등록되어 있습니다.
+    <table border="1" width="500px">
+        <tr align="center">
+            <th>상품ID</th>
+            <th>&nbsp;</th>
+            <th>상품명</th>
+            <th>가격</th>
+        </tr>
+        {% for row in productList %}
+        <tr align="center">
+            <td>{{row.product_id}}</td>
+            <td>
+                {% if row.picture_url != "-" %}
+                 {% load static %}   <!-- static 경로 로딩 -->
+                {% static "" as baseUrl %}
+                <img src="{{baseUrl}}images/{{row.picture_url}}"
+                    width="100px" height="100px">
+                {% endif %}
+            </td>
+            <td>
+                <a href="product_detail?product_id={{row.product_id}}">
+                    {{row.product_name}}
+                </a>
+                <br>
+                <a href="product_edit?product_id={{row.product_id}}">[편집]</a>
+            </td>
+            <td>{{row.price}}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

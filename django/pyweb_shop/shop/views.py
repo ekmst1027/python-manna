@@ -13,6 +13,9 @@ from django.contrib.auth import (
 )
 from shop.models import Product, Cart
 
+# 상품 이미지를 업로드할 디렉토리
+UPLOAD_DIR = "/Users/kyeongmin/Documents/python_basic/mannaedu/django/pyweb_shop/shop/static/images/"
+
 # 시작 페이지(http://localhost)
 def home(request):
     if not request.user.is_authenticated:   # 로그인하지 않은 상태
@@ -206,3 +209,105 @@ def cart_del_all(request):
     else:   # 세션이 없으면(로그인하지 않은 상태)
         # 로그인 페이지로 이동
         return redirect("/login")
+
+# 상품등록 페이지로 이동(http://localhost/product_write)
+def product_write(request):
+    # 세션변수 확인
+    uid = request.session.get("userid", "")
+    if uid == "admin":  # 관리자 계정으로 로그인한 경우
+        # 상품 등록 페이지로 이동
+        return render_to_response("product_write.html")
+    else:   # 로그인하지 않은 상태 또는 일반 계정인 경우
+        return redirect("/login")
+
+# 상품저장 페이지로 이동(http://localhost/product_insert)
+@csrf_exempt
+def product_insert(request):
+    # 첨부파일이 있는 경우
+    if "file1" in request.FILES:
+        #<input type="file" name="file1">
+        file = request.FILES["file1"]
+        file_name = file._name # 첨부파일의 이름
+        # 파일 오픈(wb: write binary)
+        fp = open("%s%s" % (UPLOAD_DIR, file_name), "wb")
+        # 파일 조각을 조금씩 읽어서 저장
+        for chunk in file.chunks():
+            fp.write(chunk)
+        
+        # 파일 닫기
+        fp.close()
+
+    # 첨부파일이 없는 경우
+    else:
+        file_name = "-"
+
+    vo = Product(product_name = request.POST["product_name"],
+                description = request.POST["description"],
+                price = request.POST["price"],
+                picture_url = file_name)
+
+    # 레코드가 저장됨
+    vo.save()
+
+    # 상품 목록으로 이동
+    return redirect("/product_list")
+
+# 상품정보 수정폼으로 이동(http://localhost/product_edit)
+def product_edit(request):
+    # 세션변수 확인
+    uid = request.session.get("userid", "")
+    # 관리자 계정으로 로그인한 경우
+    if uid == "admin":
+        # 상품코드
+        pid = request.GET["product_id"]
+        # 상품코드에 해당하는 레코드 조회
+        vo = Product.objects.get(product_id=pid)
+        # 편집 페이지로 이동
+        return render_to_response("product_edit.html", {"vo": vo})
+    # 관리자 계정이 아닌 경우
+    else:
+        # 로그인 페이지로 이동
+        return redirect("/login")
+
+# 상품정보 수정(http://localhost/product_update)
+@csrf_exempt
+def product_update(request):
+    # 상품코드
+    id = request.POST['product_id']
+    # 상품의 정보(수정전)
+    vo_src = Product.objects.get(product_id=id)
+    # 상품이미지 파일 경로
+    p_url = vo_src.picture_url
+    # 새로운 첨부파일이 있을 경우
+    if "file1" in request.FILES:
+        file = request.FILES["file1"]
+        p_url = file._name
+        
+        fp = open("%s%s" % (UPLOAD_DIR, p_url), "wb")
+        for chunk in file.chunks():
+            fp.write(chunk)
+        fp.close()
+
+    # 수정 후의 상품 정보
+    vo_new = Product(product_id = id,
+                    product_name = request.POST["product_name"],
+                    description = request.POST["description"],
+                    price = request.POST["price"],
+                    picture_url = p_url)
+
+    # 상품정보가 수정됨
+    vo_new.save()
+
+    # 상품 목록으로 이동
+    return redirect("/product_list")
+
+# 상품정보 삭제(http://localhost/product_delete)
+@csrf_exempt
+def product_delete(request):
+    # 상품레코드로 레코드를 찾아서 삭제 처리
+    Product.objects.get(\
+        product_id = request.POST["product_id"]).delete()
+    
+    # 상품목록으로 이동
+    return redirect("/product_list")
+    
